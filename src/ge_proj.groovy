@@ -8,6 +8,9 @@ import groovy.json.JsonSlurper
  * Time: 3:20 PM
  */
 
+/**
+ * Helper functions
+ */
 class Helpers
 {
   static double normalizeTheta(double t)
@@ -21,6 +24,9 @@ class Helpers
   }
 }
 
+/**
+ * Represents a (cartesian, integer) point
+ */
 class Point
 {
   int x
@@ -32,17 +38,15 @@ class Point
     y = jsonInput.y
   }
 
-
-  @Override
   public String toString()
   {
-    return "Point{" +
-            "x=" + x +
-            ", y=" + y +
-            '}';
+    return "Point{x=$x, y=$y}";
   }
 }
 
+/**
+ * A line segment, includes it's absolute angle.
+ */
 class Segment
 {
   Point start
@@ -69,6 +73,10 @@ class Segment
   }
 }
 
+/**
+ * Represents a vertex, between two line segments.   Includes the relative interior angle and the direction of
+ * the shape that it's in.
+ */
 class Vertex
 {
   Segment prev
@@ -84,6 +92,9 @@ class Vertex
   }
 }
 
+/**
+ * A shape, which is defined by a sequence of line segments.   The first and last point are assumed to be connected.
+ */
 class Shape
 {
   String id
@@ -133,7 +144,6 @@ class Shape
       }
       // We could do other checks here, but this is sufficient for the example data set.
     }
-
   }
 
   private Segment addSegment(Point start, Point end, Segment prevSeg)
@@ -165,6 +175,9 @@ class Shape
   }
 }
 
+/**
+ * A set of shapes, with IDs.
+ */
 class Geometry
 {
   Map<String, Shape> shapesById = [:]
@@ -175,6 +188,7 @@ class Geometry
     def shapes = (jsonInput.geometry.shape instanceof List) ? jsonInput.geometry.shape : Collections.singletonList(jsonInput.geometry.shape)
     shapes.each { jsonShape ->
       def shape = new Shape(jsonShape)
+      // Could check for dups here at some point.
       shapesById.put(shape.id, shape)
     }
   }
@@ -183,20 +197,15 @@ class Geometry
   {
     shapesById.values()
   }
-
-  Collection<Shape> getConvexShapes()
-  {
-    shapesById.values().findAll { Shape s -> s.convex }
-  }
 }
 
-def input1 = new JsonSlurper().parse(new FileReader("input1.json"))
-def input2 = new JsonSlurper().parse(new FileReader("input2.json"))
+// --- main ---
 
-println "input1=${input1}"
-println "input2=${input2}"
+def input1 = new JsonSlurper().parse(new FileReader("input1.json"))
 
 Geometry geometry1 = new Geometry(input1)
+
+def input2 = new JsonSlurper().parse(new FileReader("input2.json"))
 
 Geometry geometry2 = new Geometry(input2)
 
@@ -208,12 +217,13 @@ geometry2.shapes.each { Shape s ->
   if (!s.convex)
   {
     println "\"${s.id}\" is not a (convex) polygon"
+    // Don't bother with the detailed report for this one
   }
   else
   {
     // Show surrounds/intersects/separate for every other shape that is convex.
-    geometry2.convexShapes.findAll( { it.id != s.id } ).each { Shape other ->
-      println "${s.id} vs ${other.id} ..."
+    geometry2.shapes.findAll({ it.id != s.id && it.convex }).each { Shape other ->
+      println "${s.id} vs ${other.id} ..."  // TODO... fill in the surrounds/intersects/separate code
     }
   }
 }
